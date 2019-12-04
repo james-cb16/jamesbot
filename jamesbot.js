@@ -69,8 +69,7 @@ function handleMessage(message) {
             triviaGameAny();
             break;
         case '!delete':
-            clear();
-            app.listen(8000);
+            clear.clear();
             break;
         case '!r':
             app.listen(8000);
@@ -146,11 +145,11 @@ function triviaGameAny() {
                 points++;
                 bot.postMessageToChannel('general', 'Correct! \nPoints: ' + points)
 
-                return triviaGameAny();
+                triviaGameAny();
             } else if (message === response.data.results[0].incorrect_answers[0] || message === response.data.results[0].incorrect_answers[1] || message === response.data.results[0].incorrect_answers[2]) {
                 bot.postMessageToChannel('general', `Incorrect! The answer was: ${response.data.results[0].correct_answer}`)
 
-                return triviaGameAny();
+                triviaGameAny();
             } else if (message === '!exit') {
                 bot.postMessageToChannel('general', 'Trivia Game Ended. \nTotal Score: ' + points)
                 points = 0;

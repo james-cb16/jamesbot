@@ -2,7 +2,7 @@
   "name": "jamesbot",
   "version": "1.0.0",
   "description": "Multi-purpose slackbot that does cool stuff",
-  "main": "index.js",
+  "main": "jamesbot.js",
   "scripts": {
     "start": "nodemon jamesbot.js"
   },
