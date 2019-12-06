@@ -7,16 +7,16 @@ const express = require('express');
 const app = express();
 const shell = require('shelljs');
 const dotenv = require('dotenv');
+
+dotenv.config();
 const token = `${process.env.SLACK_TOKEN}`; // You can learn it from: https://api.slack.com/custom-integrations/legacy-tokens 
 let channel = 'CR34ZJRJ9';
 let baseApiUrl = 'https://slack.com/api/';
 let messages = [];
 let historyApiUrl = baseApiUrl + 'conversations.history?token=' + token + '&count=1000&channel=' + channel + '&cursor=';
 let deleteApiUrl = baseApiUrl + 'chat.delete?token=' + token + '&channel=' + channel + '&ts='
-let delay = 30; // Delay between delete operations in milliseconds
+let delay = 100; // Delay between delete operations in milliseconds
 let nextCursor = '';
-
-
 
 
 var slack = {
@@ -78,7 +78,7 @@ var slack = {
                 const response = JSON.parse(body);
 
                 if (response.messages && response.messages.length > 0) {
-                    console.log('hi');
+
                     if (response.has_more) {
                         nextCursor = response.response_metadata.next_cursor;
                     }
