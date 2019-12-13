@@ -19,7 +19,7 @@ app.listen(PORT, () => {
 });
 
 const bot = new SlackBot({
-    token: `${process.env.SLACK_TOKEN}`,
+    token: `${process.env.BOT_TOKEN}`,
     name: 'jamesbot'
 });
 
