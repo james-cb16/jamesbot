@@ -83,7 +83,7 @@ var slack = {
                         nextCursor = response.response_metadata.next_cursor;
                     }
 
-                    for (let i = 0; i < 20; i++) {
+                    for (let i = 0; i < 80; i++) {
                         messages.push(response.messages[i].ts);
                     }
 
@@ -103,7 +103,6 @@ module.exports = slack;
 
 
 function deleteMessage() {
-    console.log('hi');
     if (messages.length == 0) {
 
         if (nextCursor) {

@@ -27,6 +27,8 @@ bot.on('start', () => {
         icon_emoji: ':pensive_dab:'
     }
 
+    bot.postMessageToChannel('general', 'jamesbot is ONLINE :pensive_dab:');
+
     console.log("Bot is online.");
 
     // bot.postMessageToChannel('general',
@@ -58,7 +60,9 @@ bot.on('message', data => {
 // Response to Data
 // Use "!" prefix to post in #general channel
 function handleMessage(message) {
-    switch (message) {
+    var message = message.split(' ')
+
+    switch (message[0]) {
         case '!yomama':
             yoMamaJoke();
             break;
@@ -68,13 +72,42 @@ function handleMessage(message) {
         case '!trivia':
             triviaGameAny();
             break;
+        case '!trivia2':
+            triviaGame2();
+            break;
         case '!delete':
             clear.clear();
             break;
         case '!r':
             app.listen(8000);
             break;
+        case '!help':
+            bot.postMessageToChannel('general', 'Commands List: \n!yomama \n!ping \n!trivia \n!trivia2 \n!giphy [input]');
+            break;
+        case `!giphy`:
+            message.shift()
+
+            var searchQuery = message.join('-')
+            console.log(message[1]);
+            axios.get(`https://api.giphy.com/v1/gifs/search?q=` + searchQuery + `&api_key=` + `${process.env.GIF_API_KEY}` + '&limit=10&rating=pg').then(response => {
+
+                var randomize = [Math.floor(Math.random() * response.data.data.length)];
+                console.log(response.data.data[randomize].url);
+                var gif = response.data.data[randomize].url;
+                //var gif = response.data[randomize].images.downsized_medium.url;
+
+                bot.postMessageToChannel('general', `${gif}`);
+            });
+
+            break;
+        default: {
+            if (message[0][0] === '!') {
+                bot.postMessageToChannel('general', "sorry, that's not a command! :disappointed:");
+            }
+        }
+
     };
+
 };
 
 // Yo Mama Joke
@@ -95,7 +128,7 @@ function triviaGameAny() {
 
     //     break;
     // }
-    axios.get('https://opentdb.com/api.php?amount=10&category=14').then(response => {
+    axios.get('https://opentdb.com/api.php?amount=10&category=9').then(response => {
 
         let answers = [
             response.data.results[0].correct_answer,
@@ -161,4 +194,9 @@ function triviaGameAny() {
 
 }
 
+function triviaGame2() {
+    bot.postMessageToChannel('general', 'Please choose a category: \nGeneral Knowledge, Books, Film, Music, Musicals, Television, Video Games, Board Games, Science & Nature, Science: Computers, Science: Mathematics, Mythology, Sports, Geography, History, Politics, Art, Celebrities, Animals, Vehicles, Comics, Gadgets, Anime, Cartoons');
+
+    
+}
 // Delete Message
