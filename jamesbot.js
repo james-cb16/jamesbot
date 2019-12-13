@@ -8,11 +8,13 @@ const shell = require('shelljs');
 
 dotenv.config();
 
+var PORT = process.env.PORT || 3000;
+
 app.get('/', (request, response) => {
     response.send('Testing 1998');
 });
 
-app.listen(3000, () => {
+app.listen(PORT, () => {
     console.log('Server started on port 3000...');
 });
 
@@ -197,6 +199,6 @@ function triviaGameAny() {
 function triviaGame2() {
     bot.postMessageToChannel('general', 'Please choose a category: \nGeneral Knowledge, Books, Film, Music, Musicals, Television, Video Games, Board Games, Science & Nature, Science: Computers, Science: Mathematics, Mythology, Sports, Geography, History, Politics, Art, Celebrities, Animals, Vehicles, Comics, Gadgets, Anime, Cartoons');
 
-    
+
 }
 // Delete Message
