@@ -5,7 +5,7 @@ const app = express();
 const dotenv = require('dotenv');
 const clear = require('./delete-slack-messages');
 const shell = require('shelljs');
-
+const he = require('he');
 dotenv.config();
 
 var PORT = process.env.PORT || 3000;
@@ -73,15 +73,32 @@ function handleMessage(message) {
         case '!ping':
             bot.postMessageToChannel('general', 'pong!');
             break;
-        case '!trivia2':
-            triviaGameAny();
-            break;
         case '!trivia':
-            bot.postMessageToChannel('general', 'Please choose a category: \nGeneral Knowledge[9], Books[10], Film[11], Music[12], Musicals[13], Television[14], Video Games[15], Board Games[16], Science & Nature[17], Science: Computers[18], Science: Mathematics[19], Mythology[20], Sports[21], Geography[22], History[23], Politics[24], Art[25], Celebrities[26], Animals[27], Vehicles[28], Comics[29], Gadgets[30], Anime[31], Cartoons[32] \nType !c [#]');
+            axios.get('https://opentdb.com/api_category.php').then(response => {
+                var categoriesArr = [];
+                let categoryIndex = 0
+                getCategories();
+                function getCategories() {
+                    if (categoryIndex < response.data.trivia_categories.length) {
+                        var categoryId = [response.data.trivia_categories[categoryIndex].id];
+                        var categoryName = [response.data.trivia_categories[categoryIndex].name];
+                        var joinNameId = `[` + categoryId + `] ` + categoryName
+                        categoryIndex++;
+                        categoriesArr.unshift(`${joinNameId}`);
+                        getCategories();
+
+                    } else {
+                        var joinCategories = categoriesArr.join(' __ ');
+
+                        bot.postMessageToChannel('general', he.unescape(`&#x60;Please choose a category:&#x60; \n&#x60;${joinCategories}&#x60; \n\n&#x60;Type !category [#]&#x60;`));
+                    }
+                }
+
+            })
             break;
-        case '!c':
+        case '!category':
             message.shift()
-            axios.get('https://opentdb.com/api.php?amount=2&category=' + message).then(response => {
+            axios.get('https://opentdb.com/api.php?amount=10&category=' + message).then(response => {
 
                 let questionNumber = 1;
                 let questionIndex = 0;
@@ -111,18 +128,17 @@ function handleMessage(message) {
 
                         let newArray = answerShuffle(answers);
 
-                        let shuffledAnswers = newArray.join(", ");
+                        let shuffledAnswers = newArray.join(" | | ");
 
                         let triviaQuestion = [
                             `Question ${questionNumber}: ` + response.data.results[questionIndex].question,
                             'Choices: ' + shuffledAnswers
                         ].join('\n\n');
 
-                        bot.postMessageToChannel('general', `${triviaQuestion}`)
+                        bot.postMessageToChannel('general', he.unescape(`${triviaQuestion}`))
 
 
-                        console.log(response.data.results[questionIndex].correct_answer);
-                        console.log(message)
+                        console.log(he.unescape(`${response.data.results[questionIndex].correct_answer}`));
                         bot.on('message', data => {
                             if (data.type !== 'message') {
                                 return;
@@ -133,28 +149,81 @@ function handleMessage(message) {
 
                         function handleTrivia(userInput) {
 
-                            if (userInput.toUpperCase() === response.data.results[questionIndex].correct_answer.toUpperCase()) {
-                                console.log('hi')
+                            let triviaInput = userInput.toLowerCase().trim();
+                            let triviaCorrect = response.data.results[questionIndex].correct_answer.toLowerCase();
+
+                            if (triviaInput === he.unescape(`${triviaCorrect}`)) {
+                                bot.postMessageToChannel('general', `Correct!`)
                                 points++;
                                 questionIndex++;
                                 questionNumber++;
+                                answers = [];
+                                bot.removeAllListeners('message', handleTrivia);
 
-                                renderQuestion();
-                            } else if (userInput.toUpperCase() === response.data.results[questionIndex].incorrect_answers[0].toUpperCase() || userInput === response.data.results[questionIndex].incorrect_answers[1].toUpperCase() || userInput === response.data.results[questionIndex].incorrect_answers[2].toUpperCase()) {
+                                bot.on('message', data => {
+                                    if (data.type !== 'message') {
+                                        return;
+                                    }
+
+                                    handleMessage(data.text);
+                                });
+
+                                setTimeout(function () { renderQuestion() }, 2000);
+
+                            } else if (triviaInput === '!skip') {
+                                questionIndex++;
+                                answers = [];
+                                bot.removeAllListeners('message', handleTrivia);
+
+                                bot.on('message', data => {
+                                    if (data.type !== 'message') {
+                                        return;
+                                    }
+
+                                    handleMessage(data.text);
+                                });
+                                setTimeout(function () { renderQuestion() }, 2000);
+                            } else if (triviaInput === '!triviastop') {
+
+                                bot.removeAllListeners('message', handleTrivia);
+
+                                bot.on('message', data => {
+                                    if (data.type !== 'message') {
+                                        return;
+                                    }
+
+                                    handleMessage(data.text);
+                                });
+
+                                bot.postMessageToChannel('general', `Trivia Game Ended. \nScore: ${points}/${questionIndex}`)
+                                points = 0;
+                                questionIndex = 0;
+                                questionNumber = 1;
+                                answers = [];
+                            } else if (triviaInput === response.data.results[questionIndex].incorrect_answers[0].toLowerCase() || triviaInput === response.data.results[questionIndex].incorrect_answers[1].toLowerCase() || triviaInput === response.data.results[questionIndex].incorrect_answers[2].toLowerCase()) {
                                 bot.postMessageToChannel('general', `Incorrect! It was ${response.data.results[questionIndex].correct_answer}`);
                                 questionIndex++;
                                 questionNumber++;
-                                renderQuestion();
+                                answers = [];
+                                bot.removeAllListeners('message', handleTrivia);
+
+                                bot.on('message', data => {
+                                    if (data.type !== 'message') {
+                                        return;
+                                    }
+
+                                    handleMessage(data.text);
+                                });
+                                setTimeout(function () { renderQuestion() }, 2000);
                             }
                         }
                     } else {
-                        bot.postMessageToChannel('general', `Score: ${points}/${questionIndex}`)
+                        bot.postMessageToChannel('general', `Trivia Game Ended. \nScore: ${points}/${questionIndex}`)
                         points = 0;
                         questionIndex = 0;
                         questionNumber = 1;
-                        for (var i = 0; i < 5; i++) {
-                            bot.removeAllListeners('message', handleTrivia);
-                        }
+                        bot.removeAllListeners('message', handleTrivia);
+
                         bot.on('message', data => {
                             if (data.type !== 'message') {
                                 return;
@@ -175,7 +244,7 @@ function handleMessage(message) {
             app.listen(8000);
             break;
         case '!help':
-            bot.postMessageToChannel('general', 'Commands List: \n!yomama \n!ping \n!trivia \n!trivia2 (currently in development) \n!giphy [input]');
+            bot.postMessageToChannel('general', 'Commands List: \n!yomama \n!ping \n!trivia \n!skip (skip trivia question) \n!giphy [input]');
             break;
         case `!giphy`:
             message.shift()
@@ -208,79 +277,6 @@ function yoMamaJoke() {
     });
 };
 
-// Trivia Game: Any Category/Type/Difficulty 10 Questions
-let points = 0;
 
-function triviaGameAny() {
-    // switch (message) {
-    //     case '':
-
-    //     break;
-    // }
-    axios.get('https://opentdb.com/api.php?amount=10&category=9').then(response => {
-
-        let answers = [
-            response.data.results[0].correct_answer,
-            response.data.results[0].incorrect_answers[0],
-            response.data.results[0].incorrect_answers[1],
-            response.data.results[0].incorrect_answers[2],
-        ]
-
-        let answerShuffle = function (arr) {
-            let newPos, temp;
-            for (let i = arr.length - 1; i > 0; i--) {
-                newPos = Math.floor(Math.random() * (i + 1));
-                temp = arr[i];
-                arr[i] = arr[newPos];
-                arr[newPos] = temp;
-            }
-            return arr;
-        };
-
-        let newArray = answerShuffle(answers);
-
-        let shuffledAnswers = newArray.join(", ");
-
-        let trivia = [
-            "Category: " + response.data.results[0].category,
-            "Difficulty: " + response.data.results[0].difficulty,
-            "Question: " + response.data.results[0].question,
-            "Choices: " + shuffledAnswers
-        ].join("\n\n");
-
-        bot.postMessageToChannel('general', `${trivia}`);
-
-        console.log(trivia);
-        console.log(response.data.results[0].correct_answer)
-
-        bot.on('message', data => {
-            if (data.type !== 'message') {
-                return;
-            }
-
-            handleMessage(data.text);
-        });
-
-        function handleMessage(message) {
-
-            if (message === response.data.results[0].correct_answer) {
-                points++;
-                bot.postMessageToChannel('general', 'Correct! \nPoints: ' + points)
-
-                triviaGameAny();
-            } else if (message === response.data.results[0].incorrect_answers[0] || message === response.data.results[0].incorrect_answers[1] || message === response.data.results[0].incorrect_answers[2]) {
-                bot.postMessageToChannel('general', `Incorrect! The answer was: ${response.data.results[0].correct_answer}`)
-
-                triviaGameAny();
-            } else if (message === '!exit') {
-                bot.postMessageToChannel('general', 'Trivia Game Ended. \nTotal Score: ' + points)
-                points = 0;
-                return;
-            }
-
-        }
-    })
-
-}
 
 
