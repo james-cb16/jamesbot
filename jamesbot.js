@@ -6,16 +6,23 @@ const dotenv = require('dotenv');
 const clear = require('./delete-slack-messages');
 const shell = require('shelljs');
 const he = require('he');
+var yoMamaJoke = require('./jokes')
 dotenv.config();
 
 var PORT = process.env.PORT || 3000;
 
+
+const sum = require('./sum')
+
+
 app.get('/', (request, response) => {
     response.send('Testing 1998');
+    console.log(sum(5, 6))
 });
 
 app.listen(PORT, () => {
     console.log('Server started on port 3000...');
+    console.log(sum(5, 6))
 });
 
 app.use(express.urlencoded({ extended: true }))
@@ -52,15 +59,6 @@ bot.on('message', data => {
     handleMessage(data.text);
 });
 
-// bot.on('message', message => {
-//     switch (message) {
-//         case '!ping':
-//             bot.postMessageToChannel('pong!');
-//             console.log('hi')
-//             break;
-//     };
-// });
-
 // Response to Data
 // Use "!" prefix to post in #general channel
 function handleMessage(message) {
@@ -73,6 +71,26 @@ function handleMessage(message) {
         case '!ping':
             bot.postMessageToChannel('general', 'pong!');
             break;
+        case '!calculator':
+            message.shift();
+
+            let num1 = message[0]
+            let num2 = message[2]
+
+            if (message[1] === "+") {
+                let answer = Number(num1) + Number(num2)
+                bot.postMessageToChannel('general', `${answer}`)
+            } else if (message[1] === "-") {
+                let answer = Number(num1) - Number(num2)
+                bot.postMessageToChannel('general', `${answer}`)
+            } else if (message[1] === "*") {
+                let answer = Number(num1) * Number(num2)
+                bot.postMessageToChannel('general', `${answer}`)
+            } else if (message[1] === "/") {
+                let answer = Number(num1) / Number(num2)
+                bot.postMessageToChannel('general', `${answer}`)
+            }
+            break;
         case '!trivia':
             axios.get('https://opentdb.com/api_category.php').then(response => {
                 var categoriesArr = [];
@@ -82,7 +100,7 @@ function handleMessage(message) {
                     if (categoryIndex < response.data.trivia_categories.length) {
                         var categoryId = [response.data.trivia_categories[categoryIndex].id];
                         var categoryName = [response.data.trivia_categories[categoryIndex].name];
-                        var joinNameId = `[` + categoryId + `] ` + categoryName
+                        var joinNameId = `[` + categoryId + `]` + categoryName
                         categoryIndex++;
                         categoriesArr.unshift(`${joinNameId}`);
                         getCategories();
@@ -90,7 +108,7 @@ function handleMessage(message) {
                     } else {
                         var joinCategories = categoriesArr.join(' __ ');
 
-                        bot.postMessageToChannel('general', he.unescape(`&#x60;Please choose a category:&#x60; \n&#x60;${joinCategories}&#x60; \n\n&#x60;Type !category [#]&#x60;`));
+                        bot.postMessageToChannel('general', he.unescape(`&#x60;Please choose a category:&#x60; \n\n&#x60;Type !category [#]&#x60; \n\n&#x60;${joinCategories}&#x60;`));
                     }
                 }
 
@@ -172,6 +190,7 @@ function handleMessage(message) {
 
                             } else if (triviaInput === '!skip') {
                                 questionIndex++;
+                                questionNumber++;
                                 answers = [];
                                 bot.removeAllListeners('message', handleTrivia);
 
@@ -244,7 +263,7 @@ function handleMessage(message) {
             app.listen(8000);
             break;
         case '!help':
-            bot.postMessageToChannel('general', 'Commands List: \n!yomama \n!ping \n!trivia \n!skip (skip trivia question) \n!giphy [input]');
+            bot.postMessageToChannel('general', 'Commands List: \n!yomama \n!ping \n!trivia \n!skip (skip trivia question) \n!triviastop \n!giphy [input]');
             break;
         case `!giphy`:
             message.shift()
@@ -269,13 +288,7 @@ function handleMessage(message) {
 };
 
 // Yo Mama Joke
-function yoMamaJoke() {
-    axios.get('http://api.yomomma.info').then(response => {
-        const joke = response.data.joke;
 
-        bot.postMessageToChannel('general', `${joke}`);
-    });
-};
 
 
 

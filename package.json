@@ -4,7 +4,8 @@
   "description": "Multi-purpose slackbot that does cool stuff",
   "main": "jamesbot.js",
   "scripts": {
-    "start": "node jamesbot.js"
+    "start": "node jamesbot.js",
+    "watch": "nodemon jamesbot.js"
   },
   "author": "James Bajamundi",
   "license": "ISC",
