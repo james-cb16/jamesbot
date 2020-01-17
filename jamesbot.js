@@ -1,28 +1,25 @@
+/* eslint-disable no-undef */
+/* eslint-disable no-redeclare */
+/* eslint-disable no-case-declarations */
+/* eslint-disable no-inner-declarations */
 const SlackBot = require('slackbots');
 const axios = require('axios');
 const express = require('express');
 const app = express();
 const dotenv = require('dotenv');
 const clear = require('./delete-slack-messages');
-const shell = require('shelljs');
 const he = require('he');
-var yoMamaJoke = require('./jokes')
+const yoMamaJoke = require('./jokes');
 dotenv.config();
 
 var PORT = process.env.PORT || 3000;
 
-
-const sum = require('./sum')
-
-
 app.get('/', (request, response) => {
     response.send('Testing 1998');
-    console.log(sum(5, 6))
 });
 
 app.listen(PORT, () => {
     console.log('Server started on port 3000...');
-    console.log(sum(5, 6))
 });
 
 app.use(express.urlencoded({ extended: true }))
@@ -34,9 +31,6 @@ const bot = new SlackBot({
 
 // Start Handler
 bot.on('start', () => {
-    const params = {
-        icon_emoji: ':pensive_dab:'
-    }
 
     bot.postMessageToChannel('general', 'jamesbot is ONLINE :pensive_dab:');
 
@@ -63,6 +57,17 @@ bot.on('message', data => {
 // Use "!" prefix to post in #general channel
 function handleMessage(message) {
     var message = message.split(' ');
+    var appMention = '<@UQQBBFUBC>'
+
+    if (message.includes(`${appMention}`) && message.length < 2) {
+        var botResponse = ['Yes?', 'Did you need me?', 'What is it?', "Yup that's me", 'Hello']
+        var i = Math.floor(Math.random() * 5)
+        bot.postMessageToChannel('general', `${botResponse[i]}`);
+    } else if (message.includes(`${appMention}`, 'how', 'are', 'you')) {
+        var botResponse = ["I'm good thank you", "Doing well!", "Feeling great! :thumbsup:", "Awesome :sunglasses:"]
+        var i = Math.floor(Math.random() * 4)
+        bot.postMessageToChannel('general', `${botResponse[i]}`)
+    }
 
     switch (message[0]) {
         case '!yomama':
@@ -254,8 +259,6 @@ function handleMessage(message) {
                 }
             })
             break;
-        case '!t':
-
         case '!delete':
             clear.clear();
             break;
@@ -263,10 +266,10 @@ function handleMessage(message) {
             app.listen(8000);
             break;
         case '!help':
-            bot.postMessageToChannel('general', 'Commands List: \n!yomama \n!ping \n!trivia \n!skip (skip trivia question) \n!triviastop \n!giphy [input]');
+            bot.postMessageToChannel('general', 'Commands List: \n!yomama \n!ping \n!trivia \n!skip (skip trivia question) \n!triviastop \n!giphy [input] \n!calculator');
             break;
         case `!giphy`:
-            message.shift()
+            message.shift();
 
             var searchQuery = message.join('-')
             console.log(message[1]);
@@ -281,13 +284,19 @@ function handleMessage(message) {
             });
 
             break;
+        case '!ASCII':
+            message.shift();
+            var asciiQuery = message.join('+')
+            axios.get(`http://artii.herokuapp.com/make?text=` + asciiQuery).then(response => {
+                bot.postMessageToChannel('general', he.unescape(`${response.data}`))
+                console.log(response.data);
+            })
+            break;
 
-    };
+    }
 
 
-};
-
-// Yo Mama Joke
+}
 
 
 
