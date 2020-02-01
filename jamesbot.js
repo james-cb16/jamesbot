@@ -1,3 +1,5 @@
+/* eslint-disable newline-per-chained-call */
+/* eslint-disable no-trailing-spaces */
 /* eslint-disable no-undef */
 /* eslint-disable no-redeclare */
 /* eslint-disable no-case-declarations */
@@ -10,16 +12,17 @@ const dotenv = require('dotenv');
 const clear = require('./delete-slack-messages');
 const he = require('he');
 const yoMamaJoke = require('./jokes');
+const cheerio = require('cheerio')
 dotenv.config();
 
-var PORT = process.env.PORT || 3000;
+var PORT = process.env.PORT || 3100;
 
 app.get('/', (request, response) => {
     response.send('Testing 1998');
 });
 
 app.listen(PORT, () => {
-    console.log('Server started on port 3000...');
+    console.log('Server started on port 3100...');
 });
 
 app.use(express.urlencoded({ extended: true }))
@@ -70,6 +73,59 @@ function handleMessage(message) {
     }
 
     switch (message[0]) {
+        case '!youtube':
+            message.shift();
+
+            var searchQuery = message.join('+');
+            axios.get('http://www.youtube.com/results?search_query=' + searchQuery).then(function (response) {
+                var $ = cheerio.load(response.data)
+
+                var results = [];
+
+                $('h3').each(function (i, element) {
+                    var link = $(element).children().attr("href");
+                    var newLink = "http://www.youtube.com" + link
+                    results.push(newLink);
+                });
+
+                for (var i = 0; i < 3; i++) {
+                    results.shift();
+                }
+
+                var randomVid = Math.floor(Math.random() * 3);
+
+                console.log(results[randomVid]);
+
+                bot.postMessageToChannel('general', `${results[randomVid]}`)
+
+            })
+            break;
+        case '!google':
+            message.shift();
+
+            var searchQuery = message.join('+');
+            axios.get('https://www.google.com/search?q=' + searchQuery).then(function (response) {
+                var $ = cheerio.load(response.data)
+
+                var results = [];
+
+                $('div.s').each(function (i, element) {
+                    console.log($(element).children('span').text())
+                    var googleAnswer = $(element).childen('span').text();
+                    results.push(googleAnswer);
+                });
+
+                // for (var i = 0; i < 3; i++) {
+                //     results.shift();
+                // }
+
+                var randomAnswer = Math.floor(Math.random() * 3);
+
+                // console.log(results[randomAnswer]);
+
+                bot.postMessageToChannel('general', `${results[randomAnswer]}`)
+            })
+            break;
         case '!yomama':
             yoMamaJoke();
             break;
@@ -278,7 +334,6 @@ function handleMessage(message) {
                 var randomize = [Math.floor(Math.random() * response.data.data.length)];
                 console.log(response.data.data[randomize].url);
                 var gif = response.data.data[randomize].url;
-                //var gif = response.data[randomize].images.downsized_medium.url;
 
                 bot.postMessageToChannel('general', `${gif}`);
             });
@@ -288,9 +343,27 @@ function handleMessage(message) {
             message.shift();
             var asciiQuery = message.join('+')
             axios.get(`http://artii.herokuapp.com/make?text=` + asciiQuery).then(response => {
-                bot.postMessageToChannel('general', he.unescape(`${response.data}`))
-                console.log(response.data);
-            })
+
+                var textArt = response.data;
+
+                for (var i = 0; i < textArt.length; i++) {
+                    textArt = textArt.replace('`', ' ');
+                }
+
+                textArt = textArt.split("\n")
+                for (var i = 0; i < textArt.length; i++) {
+                    if (textArt[i].includes('_') || textArt[i].includes('|') || textArt[i].includes('/')) {
+                        let temp = '`' + textArt[i] + '`';
+                        textArt[i] = temp;
+                    }
+                }
+
+                console.log(textArt);
+
+                textArt = textArt.join('\n');
+                bot.postMessageToChannel('general', he.unescape(`${textArt}`));
+
+            });
             break;
 
     }
